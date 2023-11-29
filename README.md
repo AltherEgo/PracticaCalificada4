@@ -1,53 +1,73 @@
 # PracticaCalificada4
 ###P1
+```
+#!/usr/bin/env node
 
-const fs = require('fs');
+const fs = require('fs').promises;
+const path = require('path');
+const { promisify } = require('util');
+const readFile = promisify(fs.readFile);
+const { ArgumentParser } = require('argparse');
 
-// Obtener argumentos de la línea de comandos
-const args = process.argv.slice(2);
+async function grep(searchTerm, options) {
+  const result = [];
 
-// Función principal de grep
-function grep(searchString, flags, files) {
-  let result = '';
+  for (const file of options.files) {
+    try {
+      const content = (await readFile(file, 'utf8')).split('\n');
 
-  for (const file of files) {
-    const content = fs.readFileSync(file, 'utf8').split('\n');
+      for (let i = 0; i < content.length; i++) {
+        const line = content[i];
 
-    for (let i = 0; i < content.length; i++) {
-      const line = content[i];
-
-      // Aplicar indicadores
-      if (
-        (flags.includes('i') && line.toLowerCase().includes(searchString.toLowerCase())) ||
-        (!flags.includes('i') && line.includes(searchString))
-      ) {
-        if (flags.includes('l')) {
-          result += `${file}\n`;
-          break; // Mostrar solo el nombre del archivo
-        } else {
-          const lineNumber = flags.includes('n') ? `${i + 1}:` : '';
-          const matchedLine = flags.includes('x') ? line : `${lineNumber}${line}`;
-          result += `${file}:${matchedLine}\n`;
+        if (
+          (options.ignoreCase && line.toLowerCase().includes(searchTerm.toLowerCase())) ||
+          (!options.ignoreCase && line.includes(searchTerm))
+        ) {
+          if (options.onlyFileNames) {
+            result.push(file);
+            break;
+          } else {
+            const lineNumber = options.showLineNumbers ? `${i + 1}:` : '';
+            const matchedLine = options.showOnlyMatching ? line : `${lineNumber}${line}`;
+            result.push(`${file}:${matchedLine}`);
+          }
+        } else if (options.invertMatch) {
+          result.push(`${file}:${i + 1}:${line}`);
         }
-      } else if (flags.includes('v')) {
-        // Invertir el programa
-        result += `${file}:${i + 1}:${line}\n`;
       }
+    } catch (error) {
+      result.push(`Error reading ${file}: ${error.message}`);
     }
   }
 
-  return result.trim();
+  return result.join('\n');
 }
 
-// Parsear argumentos
-const searchString = args.shift();
-const flags = args.filter(arg => arg.startsWith('-'));
-const files = args.filter(arg => !arg.startsWith('-'));
+function parseCommandLineArgs() {
+  const parser = new ArgumentParser({
+    description: 'A simple implementation of the grep command in Node.js.',
+  });
 
-// Ejecutar grep
-const result = grep(searchString, flags, files);
-console.log(result);
+  parser.add_argument('searchTerm', { help: 'The term to search for.' });
+  parser.add_argument('files', { nargs: '+', help: 'The files to search in.' });
 
+  parser.add_argument('-i', '--ignore-case', { action: 'store_true', help: 'Ignore case distinctions.' });
+  parser.add_argument('-l', '--only-file-names', { action: 'store_true', help: 'Print only names of files with matching lines.' });
+  parser.add_argument('-n', '--show-line-numbers', { action: 'store_true', help: 'Show line numbers with output lines.' });
+  parser.add_argument('-x', '--show-only-matching', { action: 'store_true', help: 'Show only the part of a line matching the search term.' });
+  parser.add_argument('-v', '--invert-match', { action: 'store_true', help: 'Invert the sense of matching, to select non-matching lines.' });
+
+  return parser.parse_args();
+}
+
+async function main() {
+  const options = parseCommandLineArgs();
+  const result = await grep(options.searchTerm, options);
+  console.log(result);
+}
+
+main();
+```
 ###P2
 ```
 const tiposPokemon = ["Agua", "Fuego", "Planta", "Eléctrico", "Psíquico"];
