@@ -263,3 +263,27 @@ Podemos usar en el método index en nuestro modelo Movie el método order para o
   end
 
 ```
+
+
+###P4
+```javascript
+class User {
+  #password;
+
+  constructor(username, password) {
+    this.#password = password;
+  }
+
+  checkPassword(inputPassword) {
+    return inputPassword === this.#password;
+  }
+}
+
+const user = new User("EGO", "abc");
+
+console.log(user.checkPassword("abc")); 
+console.log(user.checkPassword("321")); 
+```
+la clausara que se creó localmente #password nos permite realizar esta encapsulación permitiendonos verificar la contraseña 
+![imagen](https://github.com/AltherEgo/PracticaCalificada4/assets/119552157/1fa37344-d03e-4758-9532-25c2f161e3c3)
+
